@@ -9,7 +9,9 @@ from datetime import date, timedelta
 # Mapping for tokens where the ID is different between zapper and coingecko APIs
 ID_MAPPING = {
   'dquick': 'dragons-quick',
-  'matic': 'matic-network'
+  'matic': 'matic-network',
+  'eth': 'ethereum',
+  'vision': 'apy-vision'
 }
 
 # Setup Zapper.fi constants
@@ -18,55 +20,76 @@ ZAPPER_API_KEY = "96e0cc51-a62e-42ca-acee-910ea7d2a241" #public key anyone can u
 def get_balances(user_address):
   """Get user balances via zapper.fi API"""
 
-  request = requests.get(
-    "https://api.zapper.fi/v1/protocols/tokens/balances", 
-    params={
-      'addresses[]': [user_address],
-      "api_key": ZAPPER_API_KEY,
-      'network': 'polygon'
-    },
-    headers={'accept': 'application/json'}
-  )
+  networks = ['ethereum', 'polygon']
+  balances = {}
 
-  if request.status_code == 200:
-      return request.json()
-  else:
-      raise Exception(f"Unexpected status code returned: {request.status_code}")
+  for network in networks:
+    request = requests.get(
+      "https://api.zapper.fi/v1/protocols/tokens/balances", 
+      params={
+        'addresses[]': [user_address],
+        "api_key": ZAPPER_API_KEY,
+        'network': network
+      },
+      headers={'accept': 'application/json'}
+    )
 
-def parse_zapper_balance(balance, address, author):
+    if request.status_code == 200:
+        balances[network] = request.json()
+    else:
+        raise Exception(f"Unexpected status code returned: {request.status_code}")
+  
+  return balances
+
+def parse_zapper_balance(balances, address, author):
   """
   Cleans the output of the Zapper.fi v1/protocols/tokens/balance API endpoint.
   """
-
-  # Initial key of zapper.fi API json is always the address
-  balance = balance[address]
-
-  # Assets tag contains information on individual assets owned
-  assets = balance['products'][0]['assets']
-  
-  # Meta tag contains information about the portfolio value as a whole
-  meta = balance['meta']
-
   # Start with a blank message that we fill in as we loop through the balance json
   msg = f"{author}, your wallet balance is: \n\n"
+  assets_msg = ""
+  meta_total = 0
+  meta_assets = 0
+  meta_debt = 0
 
-  for grouping in meta:
-    if grouping['label'] == 'Total':
-      msg += f"Total wallet value: ${round(grouping['value'],2)} \n"
-    elif grouping['label'] == 'Assets':
-      msg += f"Value of assets in wallet: ${round(grouping['value'],2)} \n"
-    else:
-      msg += f"Total debt undertaken: ${round(grouping['value'],2)} \n\n"
+  for network, data in balances.items():
 
-  msg += "------------------------------------------------\n\n"
+    # Initial key of zapper.fi API json is always the address
+    balance = data[address]
 
-  for asset in assets:
-    symbol = asset['symbol']
-    token_balance = asset['balance']
-    usd_value = asset['balanceUSD']
-    current_rate = asset['price']
+    # Assets tag contains information on individual assets owned
+    assets = balance['products'][0]['assets']
+  
+    # Meta tag contains information about the portfolio value as a whole
+    meta = balance['meta']
+
+    # Make clear which assets come from which network
+    assets_msg += f"On the {network.capitalize()} network you have:\n"
+
+    for grouping in meta:
+      if grouping['label'] == 'Total':
+        meta_total += round(grouping['value'],2)
+      elif grouping['label'] == 'Assets':
+        meta_assets += round(grouping['value'],2)
+      else:
+        meta_debt += round(grouping['value'],2)
+
+    for asset in assets:
+      symbol = asset['symbol']
+      token_balance = asset['balance']
+      usd_value = asset['balanceUSD']
+      current_rate = asset['price']
+      
+      assets_msg += f"{round(token_balance,4)} {symbol}: ${round(usd_value,2)} | (${current_rate}/{symbol})\n"
     
-    msg += f"{round(token_balance,4)} {symbol}: ${round(usd_value,2)} | (${current_rate}/{symbol})\n"
+    assets_msg += '\n'
+
+  
+  msg += f"Total wallet value: ${round(meta_total,2)} \n"
+  msg += f"Value of assets in wallet: ${round(meta_assets,2)} \n"
+  msg += f"Total debt undertaken: ${round(meta_debt,2)} \n\n"
+  msg += "------------------------------------------------\n\n"
+  msg += assets_msg
 
   return msg
 
@@ -76,29 +99,44 @@ def get_leaderboard():
 
   # Get score of each user
   for user in db.keys():
-    data = db[user]
-    address = data['address']
-    balance = get_balances(address)[address]
-
-    assets = balance['products'][0]['assets']
-    current_value = balance['meta'][0]['value']
-    prev_day = 0
+    user_data = db[user]
+    address = user_data['address']
+    balances = get_balances(address)
+    current_value = 0
+    prev_day_value = 0
     cg = CoinGeckoAPI()
 
-    # Get value of tokens from previous day
-    for asset in assets:
-      name = asset['label'].lower()
-      if name in ID_MAPPING.keys():
-        name = ID_MAPPING[name]
+    for network, data in balances.items():
 
-      token_balance = asset['balance']
-      yesterday = date.today() - timedelta(days=1)
-      prev_price = cg.get_coin_history_by_id(name, yesterday.strftime('%d-%m-%Y'))['market_data']['current_price']['usd']
-      print(f'{name}: {token_balance} balance, {prev_price} price')
-      prev_day += token_balance * prev_price
+      balance = data[address]
+
+      assets = balance['products'][0]['assets']
+      current_value += balance['meta'][0]['value']
+
+      # Get value of tokens from previous day
+      for asset in assets:
+        name = asset['label'].lower()
+
+        if name in ID_MAPPING.keys():
+          name = ID_MAPPING[name]
+
+        token_balance = asset['balance']
+        yesterday = date.today() - timedelta(days=1)
+
+        try:
+          prev_price = cg.get_coin_history_by_id(name, yesterday.strftime('%d-%m-%Y'))['market_data']['current_price']['usd']
+        
+        # If CoinGecko throws error, likely token ID needs to be added to ID_MAPPING
+        # Find proper ID using the coins list  endpoint of the CoinGecko API
+        except KeyError:
+          print(name) # to know which token has the error
+          return f"Looks like I've run into an error trying to retreive the price of a token. Most likely the token label needs to be mapped by my master."
+
+        print(f'{name}: {token_balance} balance, {prev_price} price')
+        prev_day_value += token_balance * prev_price
 
     # Calculate the percentage change from the previous day
-    perc_change = portfolio_change(current_value, prev_day)
+    perc_change = portfolio_change(current_value, prev_day_value)
     leaderboard[user] = perc_change
 
   msg = format_leaderboard_msg(leaderboard)
@@ -129,15 +167,23 @@ def format_leaderboard_msg(leaderboard):
       else:
         msg += f"Looks like {user}'s portfolio did the best in the past 24 hours!\nDo share your strategy with the rest of the group."
       msg += '\n----------------------------------\n'
-      msg += f"#{counter} {user}: {perc_change}%"
+      
+      if perc_change > 0:
+        msg += f"#{counter} {user}: +{perc_change}%"
+      else:
+        msg += f"#{counter} {user}: {perc_change}%"
     else:
-      msg += f"#{counter} {user}: {perc_change}%"
+      if perc_change > 0:
+        msg += f"#{counter} {user}: +{perc_change}%"
+      else:
+        msg += f"#{counter} {user}: {perc_change}%"
 
   return msg
 
 
 # --- WIP FEATURES ---
 from unused import thegraph
+from unused.contracts import MATIC_CONTRACTS
 
 ### Web3 info should depend on the network selected
 # Setup web3 with Infura
@@ -151,7 +197,7 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 # network currently not being used, only MATIC in v1
 def get_balance_custom(user_address, network, token):
   # instantiate contract
-  contract = w3.eth.contract(CONTRACTS[token]['address'], abi=CONTRACTS[token]['abi'])
+  contract = w3.eth.contract(MATIC_CONTRACTS[token]['address'], abi=MATIC_CONTRACTS[token]['abi'])
   
   if token == 'MATIC':
     balance = w3.eth.get_balance('0xb3e3D434c074272C8E99c88D40F188b92274A891')

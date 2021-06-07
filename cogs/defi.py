@@ -44,9 +44,9 @@ class DefiCommands(commands.Cog, name='DeFi Commands'):
         "Please use the !register command to add your wallet to my database."
       )
 
-    balance = utils.get_balances(address)
-    balance = utils.parse_zapper_balance(balance, address.lower(), author)
-    await ctx.send(balance)
+    balances = utils.get_balances(address)
+    balances = utils.parse_zapper_balance(balances, address.lower(), author)
+    await ctx.send(balances)
 
   @commands.command(name='leaderboard')
   async def leaderboard(self, ctx):

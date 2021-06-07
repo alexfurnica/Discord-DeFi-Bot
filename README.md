@@ -33,6 +33,14 @@ Using the [zapper.fi API](https://docs.zapper.fi/zapper-api/api-getting-started)
 
 ![Balance query](https://imgur.com/tIED007.png)
 
+### Leaderboard
+
+The leaderboard is the main community feature of this bot. When a user types `!leaderboard` in the chat, the bot will look up the balances of all registered users. It will then calculate the percentage change in the portfolio value from the day before till today.
+
+If there is a clear winner, the bot will declare a winner and encourage them to share their portfolio with the group. After all, the community should be built around shared learning. Together, we can get the best gains!
+
+![leaderboard](https://imgur.com/eA3bRhX.png)
+
 ## Bot setup
 ### Pre-Setup
 
@@ -71,13 +79,14 @@ Your bot should now be good to go, with near 100% uptime.
 
 I may work on this bot more in the future and this is just what I managed to get done in time for the 1729.com task. That being said, feel free to fork the code and upgrade it with features that you think would be helpful!
 
-- Supporting multiple networks (currently only Polygon is supported)
+- Supporting more networks (currently only Polygon & Ethereum are supported)
 - Detect token purchase and sell-off to not include them in leaderboard calculation
 - Make leaderboard more efficient by storing previous day in DB instead of querying
 - Option to only allow balance and portfolio details in private message
 - Post daily top 3 posts from [rekt.news](rekt.news) and/or [feed.rekt.news](feed.rekt.news)
 - Get latest DeFi rates from [defirates.com](defirates.com), [apy.vision](apy.vision), and/or [zapper.fi](zapper.fi)
 - Support for liquidity pool tokens
+- Support for interest-bearing tokens e.g. Aave aTokens
 - Let users query the balance of any wallet address on supported networks
 - Support for multiple addresses per user
 
