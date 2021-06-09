@@ -95,12 +95,14 @@ I may work on this bot more in the future and this is just what I managed to get
 - Detect token purchase and sell-off to not include them in leaderboard calculation
 - Make leaderboard more efficient by storing previous day in DB instead of querying
 - Option to only allow balance and portfolio details in private message
-- Post daily top 3 posts from [rekt.news](rekt.news) and/or [feed.rekt.news](feed.rekt.news)
+- Post notifications about a new protocol getting rekt from [rekt.news](rekt.news)
 - Get latest DeFi rates from [defirates.com](defirates.com), [apy.vision](apy.vision), and/or [zapper.fi](zapper.fi)
 - Support for liquidity pool tokens
 - Support for interest-bearing tokens e.g. Aave aTokens
 - Let users query the balance of any wallet address on supported networks
 - Support for multiple addresses per user
+- Unit tests
+- More extensive error handling
 
 ## Contact
 
