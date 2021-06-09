@@ -20,7 +20,6 @@ Example: `!register 0x00275072a952f7731d507dc5dec9bcb27c13cfc3`
 
 Future commands that will require a wallet address will use this address for the user by default.
 
-
 ### De-registering a user's address
 
 If a user would like to remove their address from the bot's memory, they are the only one that can do so. This is achieved by running the `!deregister` command with no other parameters.
@@ -41,10 +40,21 @@ If there is a clear winner, the bot will declare a winner and encourage them to 
 
 ![leaderboard](https://imgur.com/eA3bRhX.png)
 
+### News feed
+
+To keep the community up-to-date on the latest in DeFi news and opportunities, the bot can post articles from the rekt.news feed.
+
+Any user can use the `!news [num articles]` command. Providing the desired number of articles is optional and defaults to 3 articles. After the command is called, the bot will post the articles with their links to the channel.
+
+Every 24 hours the bot will check the rekt news feed and update the list of articles internally.
+
+![news](https://imgur.com/uJV5rHo.png)
+
 ## Bot setup
 ### Pre-Setup
 
 If you don't already have a discord bot, click [here](https://discordapp.com/developers/), accept any prompts then click "New Application" at the top right of the screen.  Enter the name of your bot then click accept.  Click on Bot from the panel from the left, then click "Add Bot."  When the prompt appears, click "Yes, do it!" 
+
 ![Left panel](https://i.imgur.com/hECJYWK.png)
 
 Then, click copy under token to get your bot's token. Your bot's icon can also be changed by uploading an image.
@@ -71,6 +81,7 @@ Go to [uptimerobot.com](https://uptimerobot.com/) and create an accout if you do
 + In Friendly Name put the name of your bot
 + For your url, put the url of the website created by your repl when the server is activated.
 + Select any alert contacts you want, then click "Create Monitor" 
+
 ![Uptime robot example](https://i.imgur.com/Qd9LXEy.png)
 
 Your bot should now be good to go, with near 100% uptime.
@@ -80,6 +91,7 @@ Your bot should now be good to go, with near 100% uptime.
 I may work on this bot more in the future and this is just what I managed to get done in time for the 1729.com task. That being said, feel free to fork the code and upgrade it with features that you think would be helpful!
 
 - Supporting more networks (currently only Polygon & Ethereum are supported)
+- Supporting multiple channels within the same Discord server
 - Detect token purchase and sell-off to not include them in leaderboard calculation
 - Make leaderboard more efficient by storing previous day in DB instead of querying
 - Option to only allow balance and portfolio details in private message

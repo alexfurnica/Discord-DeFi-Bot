@@ -1,3 +1,7 @@
+"""
+This file contains all utility functions that the bot needs to use when commands are triggered.
+"""
+
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 import os
@@ -5,6 +9,9 @@ import requests
 from replit import db
 from pycoingecko import CoinGeckoAPI
 from datetime import date, timedelta
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 # Mapping for tokens where the ID is different between zapper and coingecko APIs
 ID_MAPPING = {
@@ -18,7 +25,15 @@ ID_MAPPING = {
 ZAPPER_API_KEY = "96e0cc51-a62e-42ca-acee-910ea7d2a241" #public key anyone can use
 
 def get_balances(user_address):
-  """Get user balances via zapper.fi API"""
+  """
+  Get user balances via zapper.fi API
+  
+  Parameters:
+    - user_address (string): wallet address of the user
+
+  Returns:
+    A dict of the user's token balances per network.
+  """
 
   networks = ['ethereum', 'polygon']
   balances = {}
@@ -44,6 +59,14 @@ def get_balances(user_address):
 def parse_zapper_balance(balances, address, author):
   """
   Cleans the output of the Zapper.fi v1/protocols/tokens/balance API endpoint.
+
+  Parameters:
+    - balances (dict): dict of user's token balances per network
+    - address (string): user's wallet address
+    - author (string): name of the user that called the function
+
+  Returns:
+    A formatted message containing the user's balances.
   """
   # Start with a blank message that we fill in as we loop through the balance json
   msg = f"{author}, your wallet balance is: \n\n"
@@ -94,7 +117,12 @@ def parse_zapper_balance(balances, address, author):
   return msg
 
 def get_leaderboard():
-  """Create leaderboard message for bot to post"""
+  """
+  Create leaderboard message for bot to post
+
+  Returns:
+    Formatted leaderboard message
+  """
   leaderboard = {}
 
   # Get score of each user
@@ -144,14 +172,31 @@ def get_leaderboard():
   return msg
 
 def portfolio_change(current_value, prev_value):
-  """Calculate the percentage change in the user's portfolio"""
+  """
+  Calculate the percentage change in the user's portfolio
+
+  Parameters:
+    - current_value (float): current value of the user's portfolio
+    - prev_value (float): value of the portfolio from previous 24 hours
+
+  Returns:
+    The percentage change in portfolio value expressed as 50% not 0.5   
+  """
   if current_value > prev_value:
     return round(((current_value - prev_value) / prev_value) * 100, 2)
   else:
     return round(((prev_value - current_value) / prev_value)* 100 * -1, 2)
 
 def format_leaderboard_msg(leaderboard):
-  """Format the message that the bot sends based on the calculated leaderboard"""
+  """
+  Format the message that the bot sends based on the calculated leaderboard
+
+  Parameters:
+    - leaderboard (dict): users as keys and portfolio changes as values
+
+  Returns:
+    Formatted leaderboard message
+  """
   
   # Sort the leaderboard descending
   sorted_board = {k:v for k,v in sorted(leaderboard.items(), key= lambda item: item[1], reverse=True)}
@@ -180,6 +225,52 @@ def format_leaderboard_msg(leaderboard):
 
   return msg
 
+def get_top_rekt_posts():
+  """
+  Get all posts from feed.rekt.news front page.
+
+  Returns:
+    List of dict where key is article title and value is link to article
+  """
+
+  latest_news = []
+
+  chrome_options = Options()
+  chrome_options.add_argument('--no-sandbox')
+  chrome_options.add_argument('--disable-dev-shm-usage')
+
+  driver = webdriver.Chrome(options=chrome_options)
+  driver.get("http://feed.rekt.news")
+  soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+  for post in soup.find_all('li', class_='my-1'):
+    a = post.find('a', href=True)
+    latest_news.append({
+      'title': a.string,
+      'link': a['href']
+    })
+
+  return latest_news
+
+def parse_rekt_feed(latest_news):
+  """
+  Creates a formatted message out of the stored latest news articles.
+
+  Parameters:
+    - latest_news (list): List of all news articles
+
+  Returns:
+    Formatted message containing article links.
+  """
+
+  msgs = []
+
+  for i in range(len(latest_news)):
+    item = latest_news[i]
+    msgs.append(f"{item['title']}:\n {item['link']}")
+
+  return msgs
+
 
 # --- WIP FEATURES ---
 from unused import thegraph
@@ -196,7 +287,17 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 # Can be used for custom tokens not supported by zapper.fi
 # network currently not being used, only MATIC in v1
 def get_balance_custom(user_address, network, token):
-  # instantiate contract
+  """
+  Get user's balance for a particular token.
+
+  Parameters:
+    - user_address (string): user's wallet address
+    - network (string): the network on which the token is deployed
+    - token (string): name of token to look for
+
+  Returns:
+    The user's balance of chosen token.
+  """
   contract = w3.eth.contract(MATIC_CONTRACTS[token]['address'], abi=MATIC_CONTRACTS[token]['abi'])
   
   if token == 'MATIC':
@@ -209,6 +310,16 @@ def get_balance_custom(user_address, network, token):
   return round(balance / decimals, 4)
 
 def query_graph(subgraph,query):
+  """
+  Query a subgraph stored on the Graph with provided query.
+
+  Parameters:
+    - subgraph (string): Address of subgraph to query
+    - query (string): query to send to subgraph
+
+  Returns:
+    The JSON response from the subgraph.
+  """
 
   # Hardcoded to quickswap subgraph on Polygon
   subgraph = thegraph.QUICKSWAP_GRAPH_ADDRESS
