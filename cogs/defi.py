@@ -1,4 +1,8 @@
-from discord.ext import commands
+"""
+File containing all DeFi-related bot commands and behaviors.
+"""
+
+from discord.ext import commands, tasks
 import utils
 from replit import db
 
@@ -9,9 +13,12 @@ class DefiCommands(commands.Cog, name='DeFi Commands'):
 
   def __init__(self, bot):
     self.bot = bot
+    self.latest_news = []
+    self.update_news_feed.start()
 
   @commands.Cog.listener()
   async def on_member_join(self, ctx, member):
+    """Trigger welcome message on new user join."""
     await ctx.send(f"Hi there {member.name}. Welcome to our DeFi discussion board.")
     await ctx.send("Type !help if you wanna learn what I can do.")
     await ctx.send(
@@ -34,6 +41,7 @@ class DefiCommands(commands.Cog, name='DeFi Commands'):
 
   @commands.command(name='balance', aliases=['bl'])
   async def get_user_balance(self, ctx):
+    """Reports token balances on user's registered address"""
     # Check if user has wallet registered in db
     try:
       author = str(ctx.author)
@@ -50,9 +58,25 @@ class DefiCommands(commands.Cog, name='DeFi Commands'):
 
   @commands.command(name='leaderboard')
   async def leaderboard(self, ctx):
+    """Create user leaderboard based on 24hr portfolio changes"""
     await ctx.send('Fetching leaderboard data...')
     msg = utils.get_leaderboard()
     await ctx.send(msg)
+
+  @commands.command(name='news')
+  async def news(self, ctx, num_articles=3):
+    """Post top X articles from the rekt newsfeed."""
+    msgs = utils.parse_rekt_feed(self.latest_news[0:num_articles])
+    print(msgs)
+    for msg in msgs:
+      await ctx.send(msg)
+
+  @tasks.loop(hours=24)
+  async def update_news_feed(self):
+    """Update list of top articles every 24 hours"""
+    print('updating news feed...')
+    self.latest_news = utils.get_top_rekt_posts()
+    print('finised updating news feed')
 
   @commands.command(name='custombalance', aliases=['cb'])
   async def custom_balance(self, ctx, token: str.upper):
