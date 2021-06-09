@@ -49,10 +49,13 @@ def get_balances(user_address):
       headers={'accept': 'application/json'}
     )
 
-    if request.status_code == 200:
-        balances[network] = request.json()
-    else:
-        raise Exception(f"Unexpected status code returned: {request.status_code}")
+    balance = request.json()
+
+    if len(balance[user_address]['products']): # if empty balance on network, skip
+      if request.status_code == 200:
+        balances[network] = balance
+      else:
+          raise Exception(f"Unexpected status code returned: {request.status_code}")
   
   return balances
 
@@ -160,7 +163,6 @@ def get_leaderboard():
           print(name) # to know which token has the error
           return f"Looks like I've run into an error trying to retreive the price of a token. Most likely the token label needs to be mapped by my master."
 
-        print(f'{name}: {token_balance} balance, {prev_price} price')
         prev_day_value += token_balance * prev_price
 
     # Calculate the percentage change from the previous day
@@ -214,14 +216,16 @@ def format_leaderboard_msg(leaderboard):
       msg += '\n----------------------------------\n'
       
       if perc_change > 0:
-        msg += f"#{counter} {user}: +{perc_change}%"
+        msg += f"#{counter} {user}: +{perc_change}%\n"
       else:
-        msg += f"#{counter} {user}: {perc_change}%"
+        msg += f"#{counter} {user}: {perc_change}%\n"
     else:
       if perc_change > 0:
-        msg += f"#{counter} {user}: +{perc_change}%"
+        msg += f"#{counter} {user}: +{perc_change}%\n"
       else:
-        msg += f"#{counter} {user}: {perc_change}%"
+        msg += f"#{counter} {user}: {perc_change}%\n"
+
+    counter += 1
 
   return msg
 

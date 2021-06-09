@@ -105,3 +105,13 @@ I may work on this bot more in the future and this is just what I managed to get
 ## Contact
 
 If you like the concept of the bot or want to contact me to chat about all things blockchain and DeFi, hit me up @alexfurnica on Twitter.
+
+## Acknowledgements
+
+Thank you to [Zapper](zapper.fi) for making the best portfolio tool in DeFi that I've encountered and on top of that making *both the tool and their API free*. That's an invaluable contribution to the community and I am very grateful to them for it.
+
+Definitely check out their tool and API for your own projects.
+
+![Powered by Zapper](https://gblobscdn.gitbook.com/assets%2F-M5uNzoH28DRNpZdcArj%2F-MXCoKNsFpOZtmNysZlR%2F-MXD4qmrgRCcOC7XcEIm%2Fpower-zap-gray.svg)
+
+A big thank you also to [CoinGecko](https://www.coingecko.com/), who also have their API for free.

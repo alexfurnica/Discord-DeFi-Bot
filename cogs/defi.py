@@ -67,7 +67,6 @@ class DefiCommands(commands.Cog, name='DeFi Commands'):
   async def news(self, ctx, num_articles=3):
     """Post top X articles from the rekt newsfeed."""
     msgs = utils.parse_rekt_feed(self.latest_news[0:num_articles])
-    print(msgs)
     for msg in msgs:
       await ctx.send(msg)
 
